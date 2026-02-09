@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Item, CartItem } from './types';
 import { generateItemDetails } from './services/geminiService';
@@ -12,7 +11,7 @@ import ItemModal from './components/ItemModal';
 import CartDrawer from './components/CartDrawer';
 import AuthModal from './components/AuthModal';
 
-const App: React.FC = () => {
+export default function App() {
   const [items, setItems] = useState<Item[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -27,11 +26,11 @@ const App: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
-    // Check local persistence for admin session
     const session = localStorage.getItem('aura_admin_session');
     if (session === 'true') {
       setIsAdmin(true);
     }
+    loadData();
   }, []);
 
   const loadData = async () => {
@@ -44,8 +43,6 @@ const App: React.FC = () => {
       setIsInitializing(false);
     }
   };
-
-  useEffect(() => { loadData(); }, []);
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
@@ -137,12 +134,10 @@ const App: React.FC = () => {
         body: JSON.stringify(orderData)
       });
       
-      console.log("Notification sent to Telegram");
       alert("Order Placed Successfully!");
       setCart([]);
       setIsCartOpen(false);
     } catch (err) {
-      console.error("Failed to send notification", err);
       alert("There was an error placing your order. Please try again.");
     } finally {
       setIsCheckoutLoading(false);
@@ -177,6 +172,12 @@ const App: React.FC = () => {
         {isEditMode && isAdmin && (
           <div className="mb-10">
             <FileUpload onImageUpload={handleImageUpload} isLoading={isLoading} />
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl text-xs font-bold border border-red-100">
+            {error}
           </div>
         )}
 
@@ -256,6 +257,4 @@ const App: React.FC = () => {
       )}
     </div>
   );
-};
-
-export default App;
+}

@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 
 const responseSchema = {
@@ -17,13 +16,16 @@ const responseSchema = {
 };
 
 export const generateItemDetails = async (base64ImageData: string, mimeType: string): Promise<{ title: string; description: string }> => {
-  // Use the API key directly from the environment inside the function
-  // to avoid top-level module execution errors during the build process.
-  if (!process.env.API_KEY) {
-    throw new Error("Missing API_KEY. Please ensure it is set in your environment variables.");
+  const apiKey = process.env.API_KEY;
+  
+  if (!apiKey) {
+    // During Next.js build (prerendering), this environment variable might be missing.
+    // We log a warning instead of throwing to prevent build failure.
+    console.warn("Gemini API_KEY is not defined in environment variables. AI analysis will fail at runtime.");
+    throw new Error("AI service is not configured. Please add your API_KEY to Vercel environment variables.");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   try {
     const response = await ai.models.generateContent({
