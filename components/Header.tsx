@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { PencilIcon, EyeIcon, SearchIcon, XIcon, DatabaseIcon } from './IconComponents';
 import { Item } from '../types';
@@ -60,9 +59,9 @@ const Header: React.FC<HeaderProps> = ({
       <div className="flex justify-between items-center w-full">
         <div className="flex items-center gap-2">
            <div className="w-8 h-8 bg-brand-yellow rounded-lg flex items-center justify-center">
-             <span className="font-black text-xs">A</span>
+             <span className="font-black text-xs">L</span>
            </div>
-           <h1 className="font-black text-sm uppercase tracking-tighter">Aura</h1>
+           <h1 className="font-black text-sm uppercase tracking-tighter whitespace-nowrap">Load Badhige</h1>
         </div>
 
         <div className="flex items-center gap-2">

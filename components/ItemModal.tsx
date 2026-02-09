@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Item, CartItem } from '../types';
 
@@ -61,7 +60,7 @@ const ItemModal: React.FC<ItemModalProps> = ({ item, onClose, isEditMode, onUpda
             <h2 className="text-3xl font-black tracking-tight leading-none mb-2">{item.title}</h2>
           )}
           
-          <p className="text-brand-text-secondary font-bold text-xs uppercase tracking-widest mb-4">Aura Marketplace</p>
+          <p className="text-brand-text-secondary font-bold text-xs uppercase tracking-widest mb-4">Load Badhige Marketplace</p>
           
           <div className="px-4 py-3 bg-brand-bg/50 rounded-2xl w-full">
             {isEditMode ? (

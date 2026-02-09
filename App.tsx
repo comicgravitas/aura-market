@@ -10,12 +10,14 @@ import Spinner from './components/Spinner';
 import ItemModal from './components/ItemModal';
 import CartDrawer from './components/CartDrawer';
 import AuthModal from './components/AuthModal';
+import WelcomeOverlay from './components/WelcomeOverlay';
 
 export default function App() {
   const [items, setItems] = useState<Item[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  const [showWelcome, setShowWelcome] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState<boolean>(false); 
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
@@ -150,6 +152,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-brand-bg pb-24">
+      {showWelcome && <WelcomeOverlay onDismiss={() => setShowWelcome(false)} items={items} />}
+      
       <Header 
         isEditMode={isEditMode} 
         onToggleEditMode={() => isAdmin ? setIsEditMode(!isEditMode) : setIsAuthModalOpen(true)} 

@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Item, CartItem } from '../types';
 
 interface CartDrawerProps {
@@ -21,26 +20,73 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
   onCheckout, 
   isCheckoutLoading 
 }) => {
+  const [sliderPos, setSliderPos] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  
   const total = items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
   const cartItemsCount = items.reduce((acc, curr) => acc + curr.quantity, 0);
+
+  const handleStart = () => {
+    if (items.length === 0 || isCheckoutLoading) return;
+    setIsDragging(true);
+  };
+
+  const handleMove = (clientX: number) => {
+    if (!isDragging || !sliderRef.current) return;
+    const rect = sliderRef.current.getBoundingClientRect();
+    const width = rect.width - 56; // Adjusted for handle size
+    const x = Math.max(0, Math.min(clientX - rect.left - 28, width));
+    setSliderPos(x);
+    
+    // Check for completion
+    if (x >= width * 0.95) {
+      setIsDragging(false);
+      setSliderPos(width);
+      onCheckout();
+    }
+  };
+
+  const handleEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    // Snap back if not reached end
+    const rect = sliderRef.current?.getBoundingClientRect();
+    if (rect && sliderPos < (rect.width - 56) * 0.95) {
+      setSliderPos(0);
+    }
+  };
+
+  // Global event listeners for dragging outside the component
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX);
+    const onTouchMove = (e: TouchEvent) => handleMove(e.touches[0].clientX);
+    const onEnd = () => handleEnd();
+
+    if (isDragging) {
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onEnd);
+      window.addEventListener('touchmove', onTouchMove);
+      window.addEventListener('touchend', onEnd);
+    }
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onEnd);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onEnd);
+    };
+  }, [isDragging, sliderPos]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center animate-fade-in overflow-hidden">
-      {/* 
-        Intense 90px Glass Backdrop 
-      */}
       <div 
         className="absolute inset-0 bg-black/30 backdrop-blur-[90px] transition-all duration-700" 
         onClick={onClose} 
       />
       
-      {/* 
-        Transparent Black Glass Drawer Container 
-      */}
       <div className="relative w-full max-w-md bg-black/60 backdrop-blur-[50px] border border-white/10 text-white rounded-t-5xl p-8 pt-4 animate-slide-up shadow-[0_-40px_100px_rgba(0,0,0,0.4)] ring-1 ring-white/5 mb-0">
-        {/* Minimal aesthetic grab handle */}
         <div className="w-10 h-1 bg-white/10 rounded-full mx-auto mb-8" />
         
         <div className="flex justify-between items-center mb-10">
@@ -53,8 +99,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
           </div>
         </div>
 
-        {/* List of items */}
-        <div className="space-y-5 mb-10 max-h-[320px] overflow-y-auto no-scrollbar pr-1">
+        <div className="space-y-5 mb-10 max-h-[280px] overflow-y-auto no-scrollbar pr-1">
           {items.map(item => (
             <div key={item.id} className="flex items-center gap-4 group">
               <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center p-2 shrink-0 shadow-sm border border-white/10 group-hover:scale-105 transition-transform">
@@ -99,8 +144,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
           )}
         </div>
 
-        {/* Dynamic Total Summary Section - Now in Brand Yellow (Light Yellow) */}
-        <div className="bg-brand-yellow/90 backdrop-blur-2xl rounded-4xl p-6 mb-8 text-brand-black shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-white/20 transform hover:scale-[1.01] transition-transform">
+        <div className="bg-brand-yellow/90 backdrop-blur-2xl rounded-4xl p-6 mb-8 text-brand-black shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-white/20">
           <div className="flex justify-between items-center">
             <div>
               <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40 mb-1">Total</p>
@@ -112,28 +156,55 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                   <div className="w-12 h-12 rounded-2xl border-2 border-white/30 bg-white/20 backdrop-blur-md shadow-2xl overflow-hidden p-1.5 transition-transform group-hover/thumb:-translate-y-2">
                     <img src={i.imageUrl} className="w-full h-full object-contain" alt="" />
                   </div>
-                  {i.quantity > 1 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-brand-black text-brand-yellow text-[8px] w-5 h-5 rounded-full flex items-center justify-center font-black border border-brand-yellow shadow-lg z-10">
-                      {i.quantity}
-                    </span>
-                  )}
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Primary Action Button */}
-        <button 
-          disabled={items.length === 0 || isCheckoutLoading}
-          className="w-full bg-white text-brand-black p-5 rounded-[2.5rem] flex items-center justify-between font-black text-[10px] uppercase tracking-[0.3em] transition-all active:scale-95 group disabled:opacity-20 disabled:active:scale-100 shadow-2xl"
-          onClick={onCheckout}
+        {/* Premium Slide to Pay Interaction */}
+        <div 
+          ref={sliderRef}
+          className={`relative w-full h-16 bg-white/10 border border-white/10 rounded-full overflow-hidden transition-opacity ${items.length === 0 ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}
         >
-          <span className="pl-6">{isCheckoutLoading ? 'Wait...' : 'Make Payment'}</span>
-          <div className="bg-brand-yellow w-12 h-12 rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform shadow-lg border-2 border-white text-brand-black">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="5"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
-          </div>
-        </button>
+          {isCheckoutLoading ? (
+             <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <span className="ml-3 font-black text-[9px] uppercase tracking-[0.2em] text-white/50">Processing Order</span>
+             </div>
+          ) : (
+            <>
+              {/* Background Fill Overlay */}
+              <div 
+                className="absolute inset-0 bg-brand-yellow/20" 
+                style={{ width: `${sliderPos + 56}px` }} 
+              />
+              
+              {/* Guide Text */}
+              <div 
+                className="absolute inset-0 flex items-center justify-center transition-opacity"
+                style={{ opacity: Math.max(0, 1 - (sliderPos / 100)) }}
+              >
+                <span className="font-black text-[9px] uppercase tracking-[0.3em] text-white/40">Slide to Pay</span>
+              </div>
+
+              {/* Slider Handle */}
+              <div 
+                onMouseDown={handleStart}
+                onTouchStart={handleStart}
+                className={`absolute top-1 left-1 w-14 h-14 bg-brand-yellow rounded-full shadow-2xl flex items-center justify-center cursor-grab active:cursor-grabbing transition-transform ${isDragging ? 'scale-95' : 'scale-100'}`}
+                style={{ transform: `translateX(${sliderPos}px)` }}
+              >
+                <div className="flex items-center justify-center animate-pulse">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="5" className="text-brand-black">
+                    <polyline points="13 17 18 12 13 7" />
+                    <polyline points="6 17 11 12 6 7" />
+                  </svg>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
