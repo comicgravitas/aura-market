@@ -1,14 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const API_KEY = process.env.API_KEY;
-
-if (!API_KEY) {
-  throw new Error("Missing system environment variable: API_KEY");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
-
 const responseSchema = {
   type: Type.OBJECT,
   properties: {
@@ -25,6 +17,14 @@ const responseSchema = {
 };
 
 export const generateItemDetails = async (base64ImageData: string, mimeType: string): Promise<{ title: string; description: string }> => {
+  // Use the API key directly from the environment inside the function
+  // to avoid top-level module execution errors during the build process.
+  if (!process.env.API_KEY) {
+    throw new Error("Missing API_KEY. Please ensure it is set in your environment variables.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
