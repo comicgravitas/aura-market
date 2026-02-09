@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Item, CartItem } from '../types';
 
@@ -29,6 +30,10 @@ const ItemModal: React.FC<ItemModalProps> = ({ item, onClose, isEditMode, onUpda
     }
   };
 
+  const toggleVisibility = () => {
+    setEditedItem(prev => ({ ...prev, isSelected: !prev.isSelected }));
+  };
+
   const isInCart = !!cartItem;
 
   return (
@@ -38,13 +43,26 @@ const ItemModal: React.FC<ItemModalProps> = ({ item, onClose, isEditMode, onUpda
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" strokeWidth="3"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
         {isEditMode && (
-          <button 
-            onClick={handleSave}
-            disabled={isSaving}
-            className="px-6 py-2 bg-brand-black text-white rounded-full font-black text-xs uppercase tracking-widest disabled:opacity-50"
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
+          <div className="flex items-center gap-3">
+             <button 
+              onClick={toggleVisibility}
+              className={`px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border ${
+                editedItem.isSelected 
+                  ? 'bg-green-50 text-green-600 border-green-100' 
+                  : 'bg-red-50 text-red-600 border-red-100'
+              }`}
+            >
+              <div className={`w-2 h-2 rounded-full ${editedItem.isSelected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+              {editedItem.isSelected ? 'Visible' : 'Hidden'}
+            </button>
+            <button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-6 py-2 bg-brand-black text-white rounded-full font-black text-xs uppercase tracking-widest disabled:opacity-50"
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
         )}
       </header>
 
@@ -89,7 +107,7 @@ const ItemModal: React.FC<ItemModalProps> = ({ item, onClose, isEditMode, onUpda
         <div className="flex flex-col items-center gap-6 mt-4 shrink-0">
           <div className="bg-brand-yellow rounded-full px-10 py-4 flex items-center gap-6 shadow-xl">
              <div className="flex items-center gap-2">
-                {isInCart ? (
+                {!isEditMode && isInCart ? (
                   <div className="flex items-center gap-4">
                     <button 
                       onClick={() => onUpdateCartQuantity(item, -1)}
@@ -128,31 +146,33 @@ const ItemModal: React.FC<ItemModalProps> = ({ item, onClose, isEditMode, onUpda
         </div>
       </div>
 
-      <footer className="p-8 flex items-center gap-4 bg-white/80 backdrop-blur-md shrink-0">
-        {!isInCart ? (
+      {!isEditMode && (
+        <footer className="p-8 flex items-center gap-4 bg-white/80 backdrop-blur-md shrink-0">
+          {!isInCart ? (
+            <button 
+              onClick={onAddToCart}
+              className="flex-grow h-16 rounded-3xl font-black text-sm bg-brand-black text-white transition-all shadow-lg active:scale-95 uppercase tracking-widest"
+            >
+              Add to cart
+            </button>
+          ) : (
+            <button 
+              onClick={() => onUpdateCartQuantity(item, -cartItem.quantity)}
+              className="flex-grow h-16 rounded-3xl font-black text-sm bg-brand-yellow text-brand-black transition-all shadow-lg active:scale-95 uppercase tracking-widest"
+            >
+              Remove from cart
+            </button>
+          )}
           <button 
-            onClick={onAddToCart}
-            className="flex-grow h-16 rounded-3xl font-black text-sm bg-brand-black text-white transition-all shadow-lg active:scale-95 uppercase tracking-widest"
+            onClick={onOpenCart}
+            className="w-16 h-16 bg-brand-yellow text-brand-black rounded-3xl flex items-center justify-center shadow-lg active:scale-95 transition-all"
           >
-            Add to cart
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
           </button>
-        ) : (
-          <button 
-            onClick={() => onUpdateCartQuantity(item, -cartItem.quantity)}
-            className="flex-grow h-16 rounded-3xl font-black text-sm bg-brand-yellow text-brand-black transition-all shadow-lg active:scale-95 uppercase tracking-widest"
-          >
-            Remove from cart
-          </button>
-        )}
-        <button 
-          onClick={onOpenCart}
-          className="w-16 h-16 bg-brand-yellow text-brand-black rounded-3xl flex items-center justify-center shadow-lg active:scale-95 transition-all"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-          </svg>
-        </button>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 };

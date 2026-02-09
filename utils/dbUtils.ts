@@ -7,7 +7,7 @@ const SUPABASE_URL = 'https://vnnsbqrhkvqkjebdgkvf.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZubnNicXJoa3Zxa2plYmRna3ZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzOTQzMTgsImV4cCI6MjA4NTk3MDMxOH0.8PamO6DIUaZE2sVee8aCJ-oR9QrpmxK90SVZo8bft9Y';
 
 const DB_NAME = 'ai_marketplace_local';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Incremented version for new schema field
 const STORE_NAME = 'items';
 
 // Initialize Supabase Client
@@ -36,13 +36,13 @@ export const getAllItems = async (): Promise<Item[]> => {
     
     if (error) throw new Error(`Supabase Fetch Error: ${error.message}`);
     
-    // Map database imageurl (lowercase) to TypeScript imageUrl (camelCase)
     const mappedData = (data || []).map((row: any) => ({
       id: row.id,
       title: row.title,
       description: row.description,
       price: row.price,
-      imageUrl: row.imageurl || row.imageUrl // Handle both just in case
+      imageUrl: row.imageurl || row.imageUrl,
+      isSelected: row.isselected !== undefined ? row.isselected : true // Default to true if missing
     }));
     
     return mappedData as Item[];
@@ -66,7 +66,8 @@ export const saveItem = async (item: Item): Promise<void> => {
       title: item.title,
       description: item.description,
       price: item.price,
-      imageurl: item.imageUrl 
+      imageurl: item.imageUrl,
+      isselected: item.isSelected
     }, { onConflict: 'id' });
     
     if (error) {

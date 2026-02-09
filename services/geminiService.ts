@@ -19,10 +19,8 @@ export const generateItemDetails = async (base64ImageData: string, mimeType: str
   const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
-    // During Next.js build (prerendering), this environment variable might be missing.
-    // We log a warning instead of throwing to prevent build failure.
-    console.warn("Gemini API_KEY is not defined in environment variables. AI analysis will fail at runtime.");
-    throw new Error("AI service is not configured. Please add your API_KEY to Vercel environment variables.");
+    console.warn("Gemini API_KEY is not defined in environment variables.");
+    throw new Error("AI service not configured. Please add an environment variable named 'API_KEY' in your dashboard settings. Hyphens are not allowed in the name.");
   }
 
   const ai = new GoogleGenAI({ apiKey });

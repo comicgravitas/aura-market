@@ -1,42 +1,81 @@
 
 import React from 'react';
 import { Item, CartItem } from '../types';
-import { TrashIcon } from './IconComponents';
+import { TrashIcon, EyeIcon, PencilIcon } from './IconComponents';
 
 interface ItemCardProps {
   item: Item;
   onSelectItem: (item: Item) => void;
   onAddToCart: (item: Item) => void;
   onUpdateCartQuantity: (item: Item, delta: number) => void;
+  onToggleVisibility: (id: string) => void;
   onDelete: (id: string) => void;
   isEditMode: boolean;
   cartItem?: CartItem;
-  variant: 'pink' | 'blue';
+  variant: 'pink' | 'blue' | 'yellow' | 'green' | 'purple' | 'orange' | 'teal';
 }
 
-const ItemCard: React.FC<ItemCardProps> = ({ item, onSelectItem, onAddToCart, onUpdateCartQuantity, onDelete, isEditMode, cartItem, variant }) => {
-  const bgColor = variant === 'pink' ? 'bg-brand-pink' : 'bg-brand-blue';
+const ItemCard: React.FC<ItemCardProps> = ({ 
+  item, 
+  onSelectItem, 
+  onAddToCart, 
+  onUpdateCartQuantity, 
+  onToggleVisibility,
+  onDelete, 
+  isEditMode, 
+  cartItem, 
+  variant 
+}) => {
+  const isHidden = !item.isSelected;
+  
+  const getBgColor = () => {
+    switch (variant) {
+      case 'pink': return 'bg-brand-pink';
+      case 'blue': return 'bg-brand-blue';
+      case 'yellow': return 'bg-brand-yellow';
+      case 'green': return 'bg-brand-green';
+      case 'purple': return 'bg-brand-purple';
+      case 'orange': return 'bg-brand-orange';
+      case 'teal': return 'bg-brand-teal';
+      default: return 'bg-brand-pink';
+    }
+  };
+
+  const bgColor = getBgColor();
   const isInCart = !!cartItem;
 
   return (
     <div 
-      className={`relative rounded-4xl sm:rounded-5xl overflow-hidden p-4 sm:p-6 shadow-sm transition-all active:scale-95 ${bgColor}`}
+      className={`relative rounded-4xl sm:rounded-5xl overflow-hidden p-4 sm:p-6 shadow-sm transition-all active:scale-95 ${bgColor} ${isHidden && isEditMode ? 'opacity-40 grayscale-[0.6] ring-1 ring-black/5' : ''}`}
       onClick={() => onSelectItem(item)}
     >
       <div className="flex flex-col h-full min-h-[220px] sm:min-h-[320px]">
         <div className="flex justify-between items-start">
-          <div className="max-w-full">
-            <h3 className="text-sm sm:text-xl font-extrabold text-brand-black leading-tight mb-1 sm:mb-2 line-clamp-2">
+          <div className="max-w-full flex flex-col gap-1">
+            <h3 className="text-sm sm:text-xl font-extrabold text-brand-black leading-tight line-clamp-2">
               {item.title}
             </h3>
           </div>
           {isEditMode && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
-              className="bg-white/40 p-1.5 sm:p-2 rounded-full hover:bg-red-500 hover:text-white transition-colors shrink-0"
-            >
-              <TrashIcon className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+               <button 
+                onClick={(e) => { e.stopPropagation(); onToggleVisibility(item.id); }}
+                className={`p-1.5 sm:p-2 rounded-full transition-all shadow-sm ${isHidden ? 'bg-brand-black text-brand-yellow' : 'bg-white/60 text-brand-black hover:bg-white'}`}
+                title={isHidden ? "Show item to customers" : "Hide item from customers"}
+              >
+                {isHidden ? (
+                  <EyeOffIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                ) : (
+                  <EyeIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                )}
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                className="bg-white/40 p-1.5 sm:p-2 rounded-full hover:bg-red-500 hover:text-white transition-colors shrink-0"
+              >
+                <TrashIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+              </button>
+            </div>
           )}
         </div>
 
@@ -54,7 +93,11 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onSelectItem, onAddToCart, on
           </span>
           
           <div className="flex items-center gap-1">
-            {isInCart ? (
+            {isEditMode ? (
+               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-brand-black/5 text-brand-black/40">
+                  <PencilIcon className="w-4 h-4" />
+               </div>
+            ) : isInCart ? (
               <div className="flex items-center bg-brand-black rounded-full p-0.5 gap-2">
                 <button
                   onClick={(e) => { e.stopPropagation(); onUpdateCartQuantity(item, -1); }}
@@ -81,8 +124,20 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onSelectItem, onAddToCart, on
           </div>
         </div>
       </div>
+      
+      {isEditMode && isHidden && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span className="bg-brand-black text-brand-yellow px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest opacity-80 shadow-xl">Hidden from Public</span>
+        </div>
+      )}
     </div>
   );
 };
+
+const EyeOffIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"/>
+  </svg>
+);
 
 export default ItemCard;

@@ -1,7 +1,8 @@
 
 /**
  * Resizes and compresses an image for storage in IndexedDB.
- * Since we are using a database, we can afford higher quality (1024px, 0.8 quality).
+ * We use image/webp to preserve transparency (alpha channel) while maintaining 
+ * small file sizes and high visual quality.
  */
 export const resizeAndCompressImage = (file: File, maxWidth = 1024, maxHeight = 1024): Promise<{ base64: string, mimeType: string }> => {
   return new Promise((resolve, reject) => {
@@ -32,12 +33,20 @@ export const resizeAndCompressImage = (file: File, maxWidth = 1024, maxHeight = 
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('Canvas context not found'));
         
+        // Ensure the canvas is clear before drawing
+        ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Export as JPEG with 0.8 quality for high-quality product verification
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        /**
+         * We use image/webp as it supports transparency and offers superior compression.
+         * If a browser doesn't support webp, toDataURL defaults to image/png, 
+         * which also preserves transparency.
+         */
+        const dataUrl = canvas.toDataURL('image/webp', 0.8);
+        const mimeType = dataUrl.substring(dataUrl.indexOf(":") + 1, dataUrl.indexOf(";"));
         const base64 = dataUrl.split(',')[1];
-        resolve({ base64, mimeType: 'image/jpeg' });
+        
+        resolve({ base64, mimeType });
       };
       img.onerror = () => reject(new Error('Image loading failed'));
     };

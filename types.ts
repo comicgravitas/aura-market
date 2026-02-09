@@ -5,6 +5,7 @@ export interface Item {
   title: string;
   description: string;
   price: number;
+  isSelected: boolean; // Controls public visibility
 }
 
 export interface CartItem extends Item {
