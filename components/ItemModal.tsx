@@ -1,6 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Item, CartItem } from '../types';
+import { resizeAndCompressImage } from '../utils/fileUtils';
+import { PlusIcon, TrashIcon } from './IconComponents';
 
 interface ItemModalProps {
   item: Item;
@@ -16,6 +18,11 @@ interface ItemModalProps {
 const ItemModal: React.FC<ItemModalProps> = ({ item, onClose, isEditMode, onUpdateItem, onAddToCart, onUpdateCartQuantity, onOpenCart, cartItem }) => {
   const [editedItem, setEditedItem] = useState<Item>(item);
   const [isSaving, setIsSaving] = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const allImages = [editedItem.imageUrl, ...(editedItem.imageUrls || [])];
+  const hasMultiple = allImages.length > 1;
 
   useEffect(() => {
     setEditedItem(item);
@@ -30,8 +37,54 @@ const ItemModal: React.FC<ItemModalProps> = ({ item, onClose, isEditMode, onUpda
     }
   };
 
+  const handleAddImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      try {
+        const { base64, mimeType } = await resizeAndCompressImage(e.target.files[0]);
+        const newUrl = `data:${mimeType};base64,${base64}`;
+        setEditedItem(prev => ({
+          ...prev,
+          imageUrls: [...(prev.imageUrls || []), newUrl]
+        }));
+      } catch (err) {
+        console.error("Image processing failed", err);
+      }
+    }
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    if (indexToRemove === 0) {
+      // If we remove the primary image, promote the first secondary if it exists
+      if (editedItem.imageUrls && editedItem.imageUrls.length > 0) {
+        const [first, ...rest] = editedItem.imageUrls;
+        setEditedItem(prev => ({
+          ...prev,
+          imageUrl: first,
+          imageUrls: rest
+        }));
+      } else {
+        alert("Cannot remove the only image.");
+      }
+    } else {
+      // Index in allImages is index 0 primary, 1 secondary... 
+      // So index in imageUrls is indexToRemove - 1
+      const newSecondary = [...(editedItem.imageUrls || [])];
+      newSecondary.splice(indexToRemove - 1, 1);
+      setEditedItem(prev => ({
+        ...prev,
+        imageUrls: newSecondary
+      }));
+    }
+  };
+
   const toggleVisibility = () => {
     setEditedItem(prev => ({ ...prev, isSelected: !prev.isSelected }));
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const index = Math.round(target.scrollLeft / target.offsetWidth);
+    setCurrentIdx(index);
   };
 
   const isInCart = !!cartItem;
@@ -95,13 +148,54 @@ const ItemModal: React.FC<ItemModalProps> = ({ item, onClose, isEditMode, onUpda
           </div>
         </div>
 
-        <div className="relative w-full max-w-[280px] sm:max-w-[320px] my-4 sm:my-8 shrink-0">
+        <div className="relative w-full max-w-[280px] sm:max-w-[320px] my-4 sm:my-8 shrink-0 group">
           <div className="absolute inset-0 bg-brand-bg rounded-5xl -rotate-6 transform scale-110 opacity-50" />
-          <img 
-            src={item.imageUrl} 
-            className="relative z-10 w-full h-auto drop-shadow-3xl transform rotate-3 transition-transform hover:rotate-0 duration-500" 
-            alt={item.title}
-          />
+          
+          <div 
+            className="relative z-10 flex overflow-x-auto snap-x snap-mandatory no-scrollbar w-full h-[280px] sm:h-[320px] items-center"
+            onScroll={handleScroll}
+          >
+            {allImages.map((url, i) => (
+              <div key={i} className="min-w-full snap-center flex flex-col items-center justify-center relative px-4">
+                <img 
+                  src={url} 
+                  className="w-full h-auto max-h-full drop-shadow-3xl transform transition-transform duration-500" 
+                  alt={`${editedItem.title} view ${i + 1}`}
+                />
+                {isEditMode && (
+                   <button 
+                    onClick={() => removeImage(i)}
+                    className="absolute top-0 right-4 bg-red-500 text-white p-2 rounded-full shadow-lg active:scale-75 transition-transform"
+                   >
+                     <TrashIcon className="w-3 h-3" />
+                   </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {hasMultiple && (
+            <div className="absolute -bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
+              {allImages.map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentIdx ? 'bg-brand-black w-4' : 'bg-brand-black/20'}`} 
+                />
+              ))}
+            </div>
+          )}
+
+          {isEditMode && (
+            <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-20">
+              <input type="file" ref={fileInputRef} onChange={handleAddImage} className="hidden" accept="image/*" />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-12 h-12 bg-brand-yellow rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-transform"
+              >
+                <PlusIcon className="w-6 h-6" />
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col items-center gap-6 mt-4 shrink-0">

@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Item, CartItem } from '../types';
-import { TrashIcon, EyeIcon, PencilIcon } from './IconComponents';
+import { TrashIcon, EyeIcon, EyeOffIcon, PencilIcon } from './IconComponents';
 
 interface ItemCardProps {
   item: Item;
@@ -26,8 +26,12 @@ const ItemCard: React.FC<ItemCardProps> = ({
   cartItem, 
   variant 
 }) => {
+  const [currentIdx, setCurrentIdx] = useState(0);
   const isHidden = !item.isSelected;
   
+  const allImages = [item.imageUrl, ...(item.imageUrls || [])];
+  const hasMultiple = allImages.length > 1;
+
   const getBgColor = () => {
     switch (variant) {
       case 'pink': return 'bg-brand-pink';
@@ -44,13 +48,21 @@ const ItemCard: React.FC<ItemCardProps> = ({
   const bgColor = getBgColor();
   const isInCart = !!cartItem;
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const scrollLeft = target.scrollLeft;
+    const width = target.offsetWidth;
+    const index = Math.round(scrollLeft / width);
+    setCurrentIdx(index);
+  };
+
   return (
     <div 
-      className={`relative rounded-4xl sm:rounded-5xl overflow-hidden p-4 sm:p-6 shadow-sm transition-all active:scale-95 ${bgColor} ${isHidden && isEditMode ? 'opacity-40 grayscale-[0.6] ring-1 ring-black/5' : ''}`}
+      className={`relative rounded-4xl sm:rounded-5xl overflow-hidden p-4 sm:p-6 shadow-sm transition-all active:scale-95 cursor-pointer ${bgColor} ${isHidden && isEditMode ? 'opacity-40 grayscale-[0.6] ring-1 ring-black/5' : ''}`}
       onClick={() => onSelectItem(item)}
     >
       <div className="flex flex-col h-full min-h-[220px] sm:min-h-[320px]">
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start z-10">
           <div className="max-w-full flex flex-col gap-1">
             <h3 className="text-sm sm:text-xl font-extrabold text-brand-black leading-tight line-clamp-2">
               {item.title}
@@ -79,15 +91,37 @@ const ItemCard: React.FC<ItemCardProps> = ({
           )}
         </div>
 
-        <div className="flex-grow flex items-center justify-center p-2 sm:p-4">
-          <img 
-            src={item.imageUrl} 
-            alt={item.title} 
-            className="w-full max-h-[120px] sm:max-h-[180px] object-contain drop-shadow-2xl"
-          />
+        <div className="flex-grow relative mt-2 sm:mt-4 pointer-events-none">
+          {/* We use pointer-events-none on the container but allow the scrolling div to receive them if needed, 
+              or simply rely on the parent div click to open the modal. For a card, clicking the image should open details. */}
+          <div 
+            className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full items-center pointer-events-auto"
+            onScroll={handleScroll}
+          >
+            {allImages.map((url, i) => (
+              <div key={i} className="min-w-full snap-center flex justify-center p-2 sm:p-4 h-full">
+                <img 
+                  src={url} 
+                  alt={`${item.title} view ${i + 1}`} 
+                  className="w-full h-[120px] sm:h-[180px] object-contain drop-shadow-2xl"
+                />
+              </div>
+            ))}
+          </div>
+          
+          {hasMultiple && (
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-1 pb-2">
+              {allImages.map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`w-1 h-1 rounded-full transition-all ${i === currentIdx ? 'bg-brand-black w-3' : 'bg-brand-black/20'}`} 
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center justify-between mt-auto">
+        <div className="flex items-center justify-between mt-auto z-10">
           <span className="font-extrabold text-brand-black text-xs sm:text-sm">
             Rf {item.price.toFixed(2)}
           </span>
@@ -98,7 +132,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
                   <PencilIcon className="w-4 h-4" />
                </div>
             ) : isInCart ? (
-              <div className="flex items-center bg-brand-black rounded-full p-0.5 gap-2">
+              <div className="flex items-center bg-brand-black rounded-full p-0.5 gap-2" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={(e) => { e.stopPropagation(); onUpdateCartQuantity(item, -1); }}
                   className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center bg-white/20 text-white hover:bg-white/30 transition-colors"
@@ -133,11 +167,5 @@ const ItemCard: React.FC<ItemCardProps> = ({
     </div>
   );
 };
-
-const EyeOffIcon: React.FC<{className?: string}> = ({className}) => (
-  <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"/>
-  </svg>
-);
 
 export default ItemCard;

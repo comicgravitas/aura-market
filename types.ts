@@ -1,7 +1,8 @@
 
 export interface Item {
   id: string;
-  imageUrl: string;
+  imageUrl: string; // Primary image
+  imageUrls?: string[]; // Additional images for carousel
   title: string;
   description: string;
   price: number;
